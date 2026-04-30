@@ -423,6 +423,7 @@ body {
         transform: translateX(-100%);
         width: 280px;
         box-shadow: none;
+        z-index: 200; /* ABOVE backdrop (99) — critical for touch events */
     }
     .sidebar.open {
         transform: translateX(0);
@@ -438,6 +439,15 @@ body {
     }
     .sidebar-backdrop.active {
         opacity: 1; pointer-events: all;
+    }
+
+    /* Nav items — ensure they receive taps */
+    .nav-item {
+        min-height: 48px;
+        position: relative;
+        z-index: 10;
+        -webkit-tap-highlight-color: rgba(108,99,255,0.2);
+        touch-action: manipulation;
     }
 
     /* Main content full width */

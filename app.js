@@ -1068,31 +1068,66 @@ async function init() {
 
     const sidebar = document.querySelector('.sidebar');
 
-    function openSidebar() {
+    // Make sidebar closeSidebar globally accessible
+    window._openSidebar = function() {
         sidebar.classList.add('open');
         backdrop.classList.add('active');
-    }
+    };
 
-    function closeSidebar() {
+    window._closeSidebar = function() {
         sidebar.classList.remove('open');
         backdrop.classList.remove('active');
-    }
+    };
 
-    // Sidebar nav
-    document.querySelectorAll('.nav-item').forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
-    document.getElementById('sidebar-toggle').addEventListener('click', () => {
-        if (sidebar.classList.contains('open')) closeSidebar();
-        else openSidebar();
+    // Sidebar nav — explicitly close sidebar AFTER switching view
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent backdrop from intercepting
+            const view = btn.dataset.view;
+            if (view) {
+                switchView(view);
+                window._closeSidebar();
+            }
+        });
+        // Also handle touch explicitly for mobile
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault(); // Prevent ghost click
+            e.stopPropagation();
+            const view = btn.dataset.view;
+            if (view) {
+                switchView(view);
+                window._closeSidebar();
+            }
+        });
     });
-    backdrop.addEventListener('click', closeSidebar);
 
-    // Also close sidebar on swipe left
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+        if (sidebar.classList.contains('open')) window._closeSidebar();
+        else window._openSidebar();
+    });
+
+    // Backdrop only closes sidebar (won't fire for sidebar content due to stopPropagation)
+    backdrop.addEventListener('click', window._closeSidebar);
+
+    // Swipe left on sidebar to close
     let touchStartX = 0;
     sidebar.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
     sidebar.addEventListener('touchend', e => {
+        // Only close on swipe if not tapping a nav item (handled above)
+        if (e.target.closest('.nav-item')) return;
         const dx = e.changedTouches[0].clientX - touchStartX;
-        if (dx < -50) closeSidebar(); // Swipe left to close
+        if (dx < -50) window._closeSidebar();
     }, { passive: true });
+
+    // Logout button in sidebar
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleLogout();
+        });
+    }
 
     document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.add('hidden'); }));
 
