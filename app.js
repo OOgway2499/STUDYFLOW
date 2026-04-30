@@ -377,6 +377,8 @@ function switchView(viewName) {
     document.getElementById('page-title').textContent = title;
     document.getElementById('page-subtitle').textContent = subtitle;
     document.querySelector('.sidebar').classList.remove('open');
+    const bd = document.getElementById('sidebar-backdrop');
+    if (bd) bd.classList.remove('active');
     refreshCurrentView();
 }
 
@@ -1058,10 +1060,40 @@ async function init() {
     setRandomQuote();
     setInterval(setRandomQuote, 60000);
 
+    // Create sidebar backdrop for mobile
+    const backdrop = document.createElement('div');
+    backdrop.className = 'sidebar-backdrop';
+    backdrop.id = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+
+    const sidebar = document.querySelector('.sidebar');
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        backdrop.classList.add('active');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('active');
+    }
+
     // Sidebar nav
     document.querySelectorAll('.nav-item').forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
-    document.getElementById('sidebar-toggle').addEventListener('click', () => document.querySelector('.sidebar').classList.toggle('open'));
-    document.querySelector('.main-content').addEventListener('click', () => document.querySelector('.sidebar').classList.remove('open'));
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+        if (sidebar.classList.contains('open')) closeSidebar();
+        else openSidebar();
+    });
+    backdrop.addEventListener('click', closeSidebar);
+
+    // Also close sidebar on swipe left
+    let touchStartX = 0;
+    sidebar.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    sidebar.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        if (dx < -50) closeSidebar(); // Swipe left to close
+    }, { passive: true });
+
     document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.add('hidden'); }));
 
     // Check for existing session
@@ -1081,3 +1113,4 @@ async function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
